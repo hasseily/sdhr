@@ -153,6 +153,13 @@ struct update_window_position_cmd_t {
   int32_t screen_ybegin;
 } update_window_position_cmd;
 
+struct change_resolution_cmd_t {
+  uint16_t cmd_len;
+  uint8_t cmd_id;
+  uint32_t width;
+  uint32_t height;
+} change_resolution_cmd;
+
 uint16_t upload_file(const char* fn);
 void process_seedling(uint16_t block, uint16_t* current_block);
 void process_sapling(uint16_t block, uint16_t block_count, uint16_t* current_block);
@@ -182,6 +189,7 @@ void update_window_position(uint8_t window_index,
 			    int32_t screen_xbegin, int32_t screen_ybegin);
 void update_window_view(uint8_t window_index, 
 			int32_t screen_xbegin, int32_t screen_ybegin);
+void change_resolution(uint32_t width, uint32_t height);
 void init_commands(void);
 
 uint16_t main()
@@ -193,8 +201,15 @@ uint16_t main()
   int32_t ypos = 1580;
   uint8_t i = 0;
   uint8_t scroll_speed = 1;
+  
+  uint32_t __width = 640;
+  uint32_t __height = 360;
+
   init_commands();
   enable_sdhr();
+
+  change_resolution(__width, __height);
+  process_commands();
 
   block_count = upload_file("U5TILES.PNG");
   create_image_asset(0, block_count);
@@ -204,7 +219,7 @@ uint16_t main()
   define_tileset(0,0,0,16,16,block_count);
   process_commands();
   
-  define_window(0,1920,1024,16,16,256,256);
+  define_window(0,__width,__height,16,16,256,256);
   
   block_count = upload_file("BRITANNIA.GZ");
   update_window_set_upload(0,block_count);
@@ -293,6 +308,12 @@ uint16_t main()
       case 83: // S, for slower scroll
 	scroll_speed = 1;
 	break;
+      case 82: // R. for resolution
+	change_resolution(1920, 1024);
+	break;
+      case 84: // T.: Revert resolution 
+	change_resolution(__width, __height);
+	break;
       }
       //printf("%u\n",key);
     }
@@ -350,6 +371,10 @@ void init_commands() {
   ZERO_STRUCT(update_window_position_cmd);
   update_window_position_cmd.cmd_len = sizeof(update_window_position_cmd);
   update_window_position_cmd.cmd_id = 10;
+  
+  ZERO_STRUCT(change_resolution_cmd);
+  change_resolution_cmd.cmd_len = sizeof(change_resolution_cmd);
+  change_resolution_cmd.cmd_id = 50;
 }
   
 void queue_command(void* cmd) {
@@ -606,4 +631,10 @@ void update_window_position(uint8_t window_index,
   update_window_position_cmd.screen_xbegin = screen_xbegin;
   update_window_position_cmd.screen_ybegin = screen_ybegin;
   queue_command(&update_window_position_cmd);
+}
+
+void change_resolution(uint32_t width, uint32_t height) {
+  change_resolution_cmd.width = width;
+  change_resolution_cmd.height = height;
+  queue_command(&change_resolution_cmd);
 }
