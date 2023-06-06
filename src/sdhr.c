@@ -153,6 +153,14 @@ struct update_window_position_cmd_t {
   int32_t screen_ybegin;
 } update_window_position_cmd;
 
+struct update_window_size_cmd_t {
+  uint16_t cmd_len;
+  uint8_t cmd_id;
+  uint8_t window_index;
+  int32_t screen_xcount;
+  int32_t screen_ycount;
+} update_window_size_cmd;
+
 struct change_resolution_cmd_t {
   uint16_t cmd_len;
   uint8_t cmd_id;
@@ -189,9 +197,12 @@ void update_window_position(uint8_t window_index,
 			    int32_t screen_xbegin, int32_t screen_ybegin);
 void update_window_view(uint8_t window_index, 
 			int32_t screen_xbegin, int32_t screen_ybegin);
+void update_window_size(uint8_t window_index, 
+			int32_t screen_xcount, int32_t screen_ycount);
 void change_resolution(uint32_t width, uint32_t height);
 void init_commands(void);
 
+void update_after_resolution_change(uint32_t width, uint32_t height);
 uint16_t main()
 {
   uint8_t key;
@@ -232,7 +243,7 @@ uint16_t main()
   process_commands();
   define_window(1,16,16,16,16,1,1);
   update_window_set_immediate(1,2,avatar_tile_data);
-  update_window_position(1,(1920/2 - 16), (1024/2 - 16));
+  update_window_position(1,(__width/2 - 16), (__height/2 - 16));
   process_commands();
 
   // insert 2 moons at the top of the screen
@@ -309,10 +320,14 @@ uint16_t main()
 	scroll_speed = 1;
 	break;
       case 82: // R. for resolution
-	change_resolution(1920, 1024);
+	change_resolution(1920,1024);
+	update_after_resolution_change(1920,1024);
+	process_commands();
 	break;
       case 84: // T.: Revert resolution 
-	change_resolution(__width, __height);
+	change_resolution(__width,__height);
+	update_after_resolution_change(__width,__height);
+	process_commands();
 	break;
       }
       //printf("%u\n",key);
@@ -372,6 +387,10 @@ void init_commands() {
   update_window_position_cmd.cmd_len = sizeof(update_window_position_cmd);
   update_window_position_cmd.cmd_id = 10;
   
+  ZERO_STRUCT(update_window_size_cmd);
+  update_window_size_cmd.cmd_len = sizeof(update_window_size_cmd);
+  update_window_size_cmd.cmd_id = 51;
+
   ZERO_STRUCT(change_resolution_cmd);
   change_resolution_cmd.cmd_len = sizeof(change_resolution_cmd);
   change_resolution_cmd.cmd_id = 50;
@@ -633,8 +652,23 @@ void update_window_position(uint8_t window_index,
   queue_command(&update_window_position_cmd);
 }
 
+void update_window_size(uint8_t window_index, 
+			    int32_t screen_xcount, int32_t screen_ycount) {
+  update_window_size_cmd.window_index = window_index;
+  update_window_size_cmd.screen_xcount = screen_xcount;
+  update_window_size_cmd.screen_ycount = screen_ycount;
+  queue_command(&update_window_size_cmd);
+}
+
 void change_resolution(uint32_t width, uint32_t height) {
   change_resolution_cmd.width = width;
   change_resolution_cmd.height = height;
   queue_command(&change_resolution_cmd);
+}
+
+void update_after_resolution_change(uint32_t width, uint32_t height) {
+  update_window_size(0,width,height);
+  update_window_position(1,(width/2 - 16), (height/2 - 16));
+  update_window_position(2,(width - 128)/2,8);
+  process_commands();
 }
