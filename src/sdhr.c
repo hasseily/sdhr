@@ -202,19 +202,19 @@ void update_window_size(uint8_t window_index,
 void change_resolution(uint32_t width, uint32_t height);
 void init_commands(void);
 
-void update_after_resolution_change(uint32_t width, uint32_t height);
 uint16_t main()
 {
   uint8_t key;
   uint8_t strobe;
   uint16_t block_count;
   int32_t xpos = 1072;
-  int32_t ypos = 1580;
+  int32_t ypos = 1584;
   uint8_t i = 0;
   uint8_t scroll_speed = 1;
   
   uint32_t __width = 640;
   uint32_t __height = 360;
+  uint8_t is1080p = 0;
 
   init_commands();
   enable_sdhr();
@@ -320,15 +320,43 @@ uint16_t main()
 	scroll_speed = 1;
 	break;
       case 82: // R. for resolution
-	change_resolution(1920,1024);
-	update_after_resolution_change(1920,1024);
+	if (is1080p == 1)
+	  break;
+      	{
+	uint32_t w = 1920;
+	uint32_t h = 1080;
+	change_resolution(w,h);
+	is1080p = 1;
+	// window 0 is the overland
+	// resize it to the full screen and then
+	// change its origin so it stays centered
+	update_window_size(0,w,h);
+	xpos = xpos - (w-__width)/2;
+	ypos = ypos - (h-__height)/2;
+        update_window_view(0,xpos,ypos); // center near castle
+  	update_window_position(1,(w/2 - 16), (h/2 - 16));
+  	update_window_position(2,(w - 128)/2,8);
 	process_commands();
 	break;
+      	}
       case 84: // T.: Revert resolution 
+	if (is1080p == 0)
+	  break;
+      	{
+	uint32_t w = 1920;
+	uint32_t h = 1080;
 	change_resolution(__width,__height);
-	update_after_resolution_change(__width,__height);
+	is1080p = 0;
+	update_window_size(0,__width,__height);
+	xpos = xpos + (w-__width)/2;
+	ypos = ypos + (h-__height)/2;
+        update_window_view(0,xpos,ypos); // center near castle
+        update_window_view(0,xpos,ypos); // center near castle
+  	update_window_position(1,(__width/2 - 16), (__height/2 - 16));
+  	update_window_position(2,(__width - 128)/2,8);
 	process_commands();
 	break;
+      	}
       }
       //printf("%u\n",key);
     }
@@ -664,11 +692,4 @@ void change_resolution(uint32_t width, uint32_t height) {
   change_resolution_cmd.width = width;
   change_resolution_cmd.height = height;
   queue_command(&change_resolution_cmd);
-}
-
-void update_after_resolution_change(uint32_t width, uint32_t height) {
-  update_window_size(0,width,height);
-  update_window_position(1,(width/2 - 16), (height/2 - 16));
-  update_window_position(2,(width - 128)/2,8);
-  process_commands();
 }
