@@ -5,4 +5,4 @@ ca65 -t apple2enh --include-dir ~/cc65/asminc build/sdhr.s -o build/sdhr.o
 ca65 -t apple2enh --include-dir ~/cc65/asminc src/sp_dispatch.s -o build/sp_dispatch.o
 ld65 -t apple2enh --cfg-path ~/cc65/cfg/ --lib-path ~/cc65/lib/ -o sdhr build/sdhr.o build/sp_dispatch.o --lib apple2enh.lib -m mapfile -vm
 java -jar ~/AppleCommander-ac-1.8.0.jar -as sdhr.hdv SDHR BIN < sdhr
-cp sdhr.hdv /mnt/c/Users/hasse/OneDrive/Desktop/sdhr/
+cp sdhr.hdv /mnt/c/Users/hasse_7x/OneDrive/Desktop/sdhr/

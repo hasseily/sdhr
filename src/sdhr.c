@@ -135,6 +135,7 @@ struct update_window_enable_cmd_t {
   uint8_t cmd_id;
   uint8_t window_index;
   uint8_t enabled;
+  uint32_t anim_ms_frame;
 } update_window_enable_cmd;
 
 struct update_window_view_cmd_t {
@@ -192,7 +193,7 @@ void define_window(uint8_t window_index,
 void update_window_set_upload(uint8_t window_index, uint16_t block_count);
 void update_window_set_immediate(uint8_t window_index, 
 				 uint16_t data_len, uint8_t* data);
-void update_window_enable(uint8_t window_index, uint8_t enabled);
+void update_window_enable(uint8_t window_index, uint8_t enabled, uint32_t anim_ms_frame);
 void update_window_position(uint8_t window_index, 
 			    int32_t screen_xbegin, int32_t screen_ybegin);
 void update_window_view(uint8_t window_index, 
@@ -222,8 +223,17 @@ uint16_t main()
   change_resolution(__width, __height);
   process_commands();
 
-  block_count = upload_file("U5TILES.PNG");
+  block_count = upload_file("U5TILES1.PNG");
   create_image_asset(0, block_count);
+  process_commands();
+  block_count = upload_file("U5TILES2.PNG");
+  create_image_asset(1, block_count);
+  process_commands();
+  block_count = upload_file("U5TILES3.PNG");
+  create_image_asset(2, block_count);
+  process_commands();
+  block_count = upload_file("U5TILES4.PNG");
+  create_image_asset(3, block_count);
   process_commands();
   
   block_count = upload_file("U5TILEIDX0");
@@ -248,10 +258,10 @@ uint16_t main()
 
   // insert 2 moons at the top of the screen
   block_count = upload_file("MOONS.PNG");
-  create_image_asset(1, block_count);
+  create_image_asset(4, block_count);
   process_commands();
   block_count = upload_file("MOONSIDX0");
-  define_tileset(2,1,8,64,64,block_count);
+  define_tileset(2,4,8,64,64,block_count);
   process_commands();
   //define_tileset_set_immediate(2,1,8,64,64,ts_moons);
   define_window(2,128,64,64,64,2,1);
@@ -259,9 +269,9 @@ uint16_t main()
   update_window_position(2,248,8);
   process_commands();
   
-  update_window_enable(0,1);
-  update_window_enable(1,1);
-  update_window_enable(2,1);
+  update_window_enable(0,1, 500);
+  update_window_enable(1,1, 250);
+  update_window_enable(2,1, 0);
   process_commands();
   
   while (1) {
@@ -313,6 +323,16 @@ uint16_t main()
 	  process_commands();
 	}
 	break;
+      case 43: // +
+	  update_window_enable(0,1,100);
+	  update_window_enable(1,1,20);
+	  process_commands();
+	break;
+      case 45: // -
+	  update_window_enable(0,1,500);
+	  update_window_enable(1,1,250);
+	  process_commands();
+	break;
       case 70: // F, for faster scroll
 	scroll_speed = 16;
 	break;
@@ -350,7 +370,6 @@ uint16_t main()
 	update_window_size(0,__width,__height);
 	xpos = xpos + (w-__width)/2;
 	ypos = ypos + (h-__height)/2;
-        update_window_view(0,xpos,ypos); // center near castle
         update_window_view(0,xpos,ypos); // center near castle
   	update_window_position(1,(__width/2 - 16), (__height/2 - 16));
   	update_window_position(2,(__width - 128)/2,8);
@@ -658,9 +677,10 @@ void update_window_set_immediate(uint8_t window_index,
   queue_data(data_len, data);
 }
 
-void update_window_enable(uint8_t window_index, uint8_t enabled) {
+void update_window_enable(uint8_t window_index, uint8_t enabled, uint32_t anim_ms_frame) {
   update_window_enable_cmd.window_index = window_index;
   update_window_enable_cmd.enabled = enabled;
+  update_window_enable_cmd.anim_ms_frame = anim_ms_frame;
   queue_command(&update_window_enable_cmd);
 }
 
