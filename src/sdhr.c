@@ -169,6 +169,13 @@ struct change_resolution_cmd_t {
   uint32_t height;
 } change_resolution_cmd;
 
+struct update_window_display_image_cmd_t {
+  uint16_t cmd_len;
+  uint8_t cmd_id;
+  uint8_t window_index;
+  uint8_t asset_index;
+} update_window_display_image_cmd;
+
 uint16_t upload_file(const char* fn);
 void process_seedling(uint16_t block, uint16_t* current_block);
 void process_sapling(uint16_t block, uint16_t block_count, uint16_t* current_block);
@@ -201,6 +208,7 @@ void update_window_view(uint8_t window_index,
 void update_window_size(uint8_t window_index, 
 			int32_t screen_xcount, int32_t screen_ycount);
 void change_resolution(uint32_t width, uint32_t height);
+void update_window_display_image(uint8_t window_index, uint8_t asset_index);
 void init_commands(void);
 
 uint16_t main()
@@ -221,6 +229,35 @@ uint16_t main()
   enable_sdhr();
 
   change_resolution(__width, __height);
+  process_commands();
+
+  // Startup splash screens
+  block_count = upload_file("U5STARTUP1.PNG");
+  create_image_asset(11, block_count);
+  process_commands();
+  define_window(11,640,360,640,360,1,1);
+  process_commands();
+  update_window_display_image(11, 11);
+  update_window_enable(11, 1, 0);
+  process_commands();
+
+  block_count = upload_file("U5STARTUP2.PNG");
+  create_image_asset(10, block_count);
+  process_commands();
+  define_window(10,640,360,640,360,1,1);
+  process_commands();
+  update_window_display_image(10,10);
+  process_commands();
+
+  while (1) {
+    key = *key_p;
+    if (key & 0x80) {
+      strobe = *key_strobe_p;
+      break;
+    }
+  }
+
+  update_window_enable(10, 1, 0);
   process_commands();
 
   block_count = upload_file("U5TILES1.PNG");
@@ -268,7 +305,17 @@ uint16_t main()
   update_window_set_immediate(2,4,moons_tile_data);
   update_window_position(2,248,8);
   process_commands();
+
+  while (1) {
+    key = *key_p;
+    if (key & 0x80) {
+      strobe = *key_strobe_p;
+      break;
+    }
+  }
   
+  update_window_enable(11,0, 0);  // disable startup screen
+  update_window_enable(10,0, 0);
   update_window_enable(0,1, 500);
   update_window_enable(1,1, 250);
   update_window_enable(2,1, 0);
@@ -441,6 +488,10 @@ void init_commands() {
   ZERO_STRUCT(change_resolution_cmd);
   change_resolution_cmd.cmd_len = sizeof(change_resolution_cmd);
   change_resolution_cmd.cmd_id = 50;
+
+  ZERO_STRUCT(update_window_display_image_cmd);
+  update_window_display_image_cmd.cmd_len = sizeof(update_window_display_image_cmd);
+  update_window_display_image_cmd.cmd_id = 52;
 }
   
 void queue_command(void* cmd) {
@@ -503,7 +554,7 @@ uint16_t upload_file(const char* fn) {
       //printf("file entry %u\n",i);
       e = dir_p->entries + i;
       storage_type = (e->storage_type_name_length & 0xf0) >> 4; 
-      if (storage_type != 0 && storage_type != 1 && storage_type != 2) {
+      if (storage_type > 3) {
 	continue;
       }
       fn_len = e->storage_type_name_length & 0x0f;
@@ -519,6 +570,7 @@ uint16_t upload_file(const char* fn) {
     if (found) break;
   } while (dir_p->prev_next[2] && dir_p->prev_next[3]);
   if (!found) {
+    printf("NOT FOUND\n");
     BRK();
   }
   // determine block count
@@ -604,7 +656,7 @@ void process_tree(uint16_t block, uint16_t block_count, uint16_t* current_block)
   uint8_t ret;
   uint8_t i;
   uint16_t dest_block;
-  //printf("process_tree %u\n",block);
+  // printf("process_tree %u\n",block);
   sp_load_block_source_lomed = block;
   sp_load_block_dest_addr = masterbuf;
   ret = sp_load_block(dispatch_offset);
@@ -613,6 +665,9 @@ void process_tree(uint16_t block, uint16_t block_count, uint16_t* current_block)
   }
   for (i = 0; i < 128; ++i) { // tree master blocks have max 128 entries
     dest_block = masterbuf[i+256] * 256 + masterbuf[i];
+    // printf("process sapling dest block: %u from block: %u\n",dest_block,block);
+    if (dest_block == 0)
+	continue;
     process_sapling(dest_block, block_count, current_block);  
   }
 }
@@ -712,4 +767,10 @@ void change_resolution(uint32_t width, uint32_t height) {
   change_resolution_cmd.width = width;
   change_resolution_cmd.height = height;
   queue_command(&change_resolution_cmd);
+}
+
+void update_window_display_image(uint8_t window_index, uint8_t asset_index) { 
+  update_window_display_image_cmd.window_index = window_index;
+  update_window_display_image_cmd.asset_index = asset_index;
+  queue_command(&update_window_display_image_cmd);
 }
