@@ -317,6 +317,7 @@ uint16_t main()
   
   update_window_enable(11,0, 0);  // disable startup screen
   update_window_enable(10,0, 0);
+  process_commands();
   update_window_enable(0,1, 500);
   update_window_enable(1,1, 250);
   update_window_enable(2,1, 0);
