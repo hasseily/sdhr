@@ -174,6 +174,7 @@ struct update_window_display_image_cmd_t {
   uint8_t cmd_id;
   uint8_t window_index;
   uint8_t asset_index;
+  uint8_t pixel_size;
 } update_window_display_image_cmd;
 
 uint16_t upload_file(const char* fn);
@@ -208,7 +209,7 @@ void update_window_view(uint8_t window_index,
 void update_window_size(uint8_t window_index, 
 			int32_t screen_xcount, int32_t screen_ycount);
 void change_resolution(uint32_t width, uint32_t height);
-void update_window_display_image(uint8_t window_index, uint8_t asset_index);
+void update_window_display_image(uint8_t window_index, uint8_t asset_index, uint8_t pixel_size);
 void init_commands(void);
 
 uint16_t main()
@@ -237,7 +238,7 @@ uint16_t main()
   process_commands();
   define_window(11,640,360,640,360,1,1);
   process_commands();
-  update_window_display_image(11, 11);
+  update_window_display_image(11, 11, 1);
   update_window_enable(11, 1, 0);
   process_commands();
 
@@ -246,7 +247,7 @@ uint16_t main()
   process_commands();
   define_window(10,640,360,640,360,1,1);
   process_commands();
-  update_window_display_image(10,10);
+  update_window_display_image(10,10, 16);
   process_commands();
 
   while (1) {
@@ -769,8 +770,9 @@ void change_resolution(uint32_t width, uint32_t height) {
   queue_command(&change_resolution_cmd);
 }
 
-void update_window_display_image(uint8_t window_index, uint8_t asset_index) { 
+void update_window_display_image(uint8_t window_index, uint8_t asset_index, uint8_t pixel_size) { 
   update_window_display_image_cmd.window_index = window_index;
   update_window_display_image_cmd.asset_index = asset_index;
+  update_window_display_image_cmd.pixel_size = pixel_size;
   queue_command(&update_window_display_image_cmd);
 }
